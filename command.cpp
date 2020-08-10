@@ -256,7 +256,7 @@ namespace easycmd {
 		}
 
 		std::string path = __get_command_path();
-		des.append("\nUsage: ").append(path);
+		des.append("\nUsage:\n  ").append(path);
 		if (!sub_cmds.empty())
 			des.append(" [COMMAND]");
 		if (!options_.empty())
@@ -266,11 +266,11 @@ namespace easycmd {
 		if (!sub_cmds.empty())
 		{
 			std::string sub_cmds_desc;
-			sub_cmds_desc.append("  ").append("COMMANDS: \n");
+			sub_cmds_desc.append("COMMANDS: \n");
 			for (command_map::const_iterator beg = sub_cmds.begin(); beg != sub_cmds.end(); beg++)
 			{
 				sub_cmds_desc
-					.append("    ")
+					.append("  ")
 					.append(beg->second->name_)
 					.append("\t\t").append(beg->second->desc_)
 					.append("\n");
@@ -281,11 +281,11 @@ namespace easycmd {
 		if (!options_.empty())
 		{
 			std::string options_desc;
-			options_desc.append("  ").append("OPTIONS: \n");
+			options_desc.append("OPTIONS: \n");
 			for (option_map::const_iterator beg = options_.begin(); beg != options_.end(); beg++)
 			{
 				options_desc
-					.append("    --").append(beg->first)
+					.append("  --").append(beg->first)
 					.append("\t\t").append(beg->second->desc_)
 					.append("\n");
 			}

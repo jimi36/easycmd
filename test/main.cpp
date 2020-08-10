@@ -8,8 +8,8 @@ void error(const std::string &msg)
 int func(const easycmd::command *cmd)
 {
 	std::string usgae;
-	//cmd->get_parent_command()->get_help(usgae);
-	cmd->get_help(usgae);
+	cmd->get_parent_command()->get_help(usgae);
+	//cmd->get_help(usgae);
 	printf("%s", usgae.c_str());
 
 	return 0;
@@ -35,7 +35,7 @@ int main(int argc, const char **argv)
 	comm_sub->with_name("help")->with_desc("Command help")->with_action(func);
 
 	easycmd::command cmd;
-	cmd.with_name(argv[0])->with_fault(error);
+	cmd.with_name(argv[0])->with_fault(error)->with_desc("Test easy command");
 
 	cmd.add_sub_cmd(sub);
 	cmd.add_comm_sub_cmd(comm_sub);
