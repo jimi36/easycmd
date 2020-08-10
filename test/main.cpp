@@ -42,5 +42,5 @@ int main(int argc, const char **argv)
 
 	int ret = cmd.run(argc, argv);
 
-	return 0;
+	return ret;
 }

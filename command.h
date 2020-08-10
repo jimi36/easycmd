@@ -26,6 +26,7 @@
 #define options_h
 
 #include <map>
+#include <string.h>
 
 #include "option.h"
 

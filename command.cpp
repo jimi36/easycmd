@@ -138,11 +138,32 @@ namespace easycmd {
 			return -1;
 		}
 
+
+		int __getenv(const char *name, char *value, int maxlen)
+		{
+#ifdef WIN32
+			size_t len = 0;
+                        memset(value, 0, maxlen);
+                        getenv_s(&len, value, sizeof(value), opt->env_.c_str());
+			if (len == 0)
+				return -1;
+			return len;
+#else
+			char *tmp = getenv(name);
+			if (tmp == NULL)
+				return -1;
+			int len = strlen(tmp);
+			if (len >= maxlen)
+				return -1;
+			memcpy(value, tmp, len);
+			return len;
+#endif
+		}
 	}
 
 	command::command():
-		action_cb_(NULL),
 		fault_cb_(NULL),
+		action_cb_(NULL),
 		parent_cmd_(NULL)
 	{
 	}
@@ -399,9 +420,7 @@ namespace easycmd {
 			option *opt = (beg++)->second;
 			if (!opt->env_.empty())
 			{
-				size_t len = 0;
-				memset(value, 0, sizeof(value));
-				auto e = getenv_s(&len, value, sizeof(value), opt->env_.c_str());
+				int len = internal::__getenv(opt->env_.c_str(), value, sizeof(value));
 				if (len > 0)
 				{
 					if (opt->type_ == internal::OP_TYPE_BOOL)
