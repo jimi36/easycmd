@@ -143,8 +143,8 @@ namespace easycmd {
 		{
 #ifdef WIN32
 			size_t len = 0;
-                        memset(value, 0, maxlen);
-                        getenv_s(&len, value, sizeof(value), opt->env_.c_str());
+			memset(value, 0, maxlen);
+			getenv_s(&len, value, sizeof(value), name);
 			if (len == 0)
 				return -1;
 			return len;
