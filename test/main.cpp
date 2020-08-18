@@ -1,24 +1,21 @@
 #include <easycmd/command.h>
 
-void error(const std::string &msg)
+int help(const easycmd::command *cmd)
 {
-	printf("%s", msg.c_str());
+	printf("help\n");
+	return 0;
 }
 
-int func(const easycmd::command *cmd)
+int start(const easycmd::command *cmd)
 {
-	std::string usgae;
-	cmd->get_parent_command()->get_help(usgae);
-	//cmd->get_help(usgae);
-	printf("%s", usgae.c_str());
-
+	printf("start\n");
 	return 0;
 }
 
 int main(int argc, const char **argv)
 {
 	easycmd::command *sub = new easycmd::command();
-	sub->with_name("start")->with_desc("Start server");
+	sub->with_name("start")->with_desc("Start server")->with_action(start);
 	sub->create_option_bool("with_iocp")
 		->with_env("WITH_IOCP")
 		->with_desc("Using iocp on windows")
@@ -32,10 +29,10 @@ int main(int argc, const char **argv)
 		->with_default("127.0.0.1");
 
 	easycmd::command *comm_sub = new easycmd::command();
-	comm_sub->with_name("help")->with_desc("Command help")->with_action(func);
+	comm_sub->with_name("help")->with_desc("Command help");
 
 	easycmd::command cmd;
-	cmd.with_name(argv[0])->with_fault(error)->with_desc("Test easy command");
+	cmd.with_name(argv[0])->with_desc("Test easy command");
 
 	cmd.add_sub_cmd(sub);
 	cmd.add_comm_sub_cmd(comm_sub);

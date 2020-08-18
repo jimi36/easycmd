@@ -57,6 +57,7 @@ namespace easycmd {
 		 ********************************************************************************/
 		option(internal::option_type ot, const std::string &name): 
 			type_(ot),
+			required_(true),
 			name_(name),
 			found_value_(false)
 		{}
@@ -80,10 +81,10 @@ namespace easycmd {
 		/*********************************************************************************
 		 * Set default value
 		 ********************************************************************************/
-		option* with_default(int value) { __set(value); return this; }
-		option* with_default(bool value) { __set(value); return this; }
-		option* with_default(double value) { __set(value); return this; }
-		option* with_default(const std::string &value) { __set(value); return this; }
+		option* with_default(int value) { __set(value); required_ = false; return this; }
+		option* with_default(bool value) { __set(value); required_ = false; return this; }
+		option* with_default(double value) { __set(value); required_ = false; return this; }
+		option* with_default(const std::string &value) { __set(value); required_ = false; return this; }
 
 		/*********************************************************************************
 		 * Get value
@@ -105,7 +106,10 @@ namespace easycmd {
 
 	private:
 		// option type
-		int type_;	
+		int type_;
+
+		// required status
+		bool required_;
 
 		// option name
 		std::string name_;

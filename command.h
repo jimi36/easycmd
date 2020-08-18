@@ -81,11 +81,6 @@ namespace easycmd {
 		command* with_action(action_callback action) { action_cb_ = action; return this; }
 
 		/*********************************************************************************
-		 * Set command fault callback
-		 ********************************************************************************/
-		command* with_fault(fault_callback cb) { fault_cb_ = cb; return this; }
-
-		/*********************************************************************************
 		 * Add sub command
 		 * If there is already a sub command with the same name, the new sub command 
 		 * will replace the old one.
@@ -129,6 +124,11 @@ namespace easycmd {
 		 ********************************************************************************/
 		void get_help(std::string &des) const;
 
+		/*********************************************************************************
+		 * Print command help
+		 ********************************************************************************/
+		void print_help() const;
+
 	private:
 		/*********************************************************************************
 		 * Append option
@@ -138,7 +138,12 @@ namespace easycmd {
 		/*********************************************************************************
 		 * Run command will parse args and call sub command or call action
 		 ********************************************************************************/
-		int __run_command(const char **argv, int argc, int idx, std::string &err);
+		int __run_command(const char **argv, int argc, int next_arg);
+
+		/*********************************************************************************
+		 * Handle command
+		 ********************************************************************************/
+		int __handle_command();
 
 		/*********************************************************************************
 		 * Load options from environment
@@ -148,7 +153,7 @@ namespace easycmd {
 		/*********************************************************************************
 		 * Load options from args
 		 ********************************************************************************/
-		bool __load_options_from_args(const char **argv, int argc, std::string &err);
+		bool __load_options_from_args(const char **argv, int argc);
 
 		/*********************************************************************************
 		 * Get common sub command
@@ -165,21 +170,12 @@ namespace easycmd {
 		 ********************************************************************************/
 		std::string __get_command_path() const;
 
-		/*********************************************************************************
-		 * Occur fault with msg
-		 * This will call fault callback if existed.
-		 ********************************************************************************/
-		void __occur_fault(const std::string &msg);
-
 	private:
 		// Command name
 		std::string name_;
 
 		// Command desc
 		std::string desc_;
-
-		// Command fault callback
-		fault_callback fault_cb_;
 
 		// Command action callback
 		action_callback action_cb_;

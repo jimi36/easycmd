@@ -162,7 +162,6 @@ namespace easycmd {
 	}
 
 	command::command():
-		fault_cb_(NULL),
 		action_cb_(NULL),
 		parent_cmd_(NULL)
 	{
@@ -290,10 +289,11 @@ namespace easycmd {
 			sub_cmds_desc.append("COMMANDS: \n");
 			for (command_map::const_iterator beg = sub_cmds.begin(); beg != sub_cmds.end(); beg++)
 			{
+				int space_len = 32 - 4 - beg->second->name_.size();
 				sub_cmds_desc
-					.append("  ")
+					.append("    ")
 					.append(beg->second->name_)
-					.append("\t\t").append(beg->second->desc_)
+					.append(space_len, ' ').append(beg->second->desc_)
 					.append("\n");
 			}
 			des.append("\n").append(sub_cmds_desc).append("\n");
@@ -305,13 +305,23 @@ namespace easycmd {
 			options_desc.append("OPTIONS: \n");
 			for (option_map::const_iterator beg = options_.begin(); beg != options_.end(); beg++)
 			{
-				options_desc
-					.append("  --").append(beg->first)
-					.append("\t\t").append(beg->second->desc_)
-					.append("\n");
+				int space_len = 32 - 6 - beg->first.size();
+				options_desc.append("    --").append(beg->first).append(space_len, ' ');
+				if (beg->second->required_)
+					options_desc.append("[Required] ");
+				else
+					options_desc.append("[Optional] ");
+				options_desc.append(beg->second->desc_).append("\n");
 			}
 			des.append("\n").append(options_desc);
 		}
+	}
+
+	void command::print_help() const
+	{
+		std::string help;
+		get_help(help);
+		printf("%s", help.c_str());
 	}
 
 	const option* command::get_option(const std::string &name) const
@@ -327,24 +337,7 @@ namespace easycmd {
 		if (argc < 0)
 			return -1;
 
-		if (argc == 1)
-		{
-			if (action_cb_)
-				return action_cb_(this);
-			else
-				return 0;
-		}
-
-		std::string err;
-		int ret = __run_command(argv, argc, 1, err);
-
-		if (!err.empty())
-		{
-			err.append("\n");
-			__occur_fault(err);
-		}
-
-		return ret;
+		return __run_command(argv, argc, 1);
 	}
 
 	void command::__append_option(option *opt)
@@ -359,12 +352,16 @@ namespace easycmd {
 		options_[opt->name_] = opt;
 	}
 
-	int command::__run_command(const char **argv, int argc, int idx, std::string &err)
+	int command::__run_command(const char **argv, int argc, int next_arg)
 	{
-		if (idx < argc && internal::__is_arg_command(argv[idx]))
+		// if there is no more commands or options, the command should be handled
+		if (next_arg >= argc)
+			return __handle_command();
+
+		if (internal::__is_arg_command(argv[next_arg])) // the next arg is command
 		{
 			command *sub = NULL;
-			std::string name(argv[idx]);
+			std::string name(argv[next_arg]);
 			command_map::iterator it = sub_cmds_.find(name);
 			if (it != sub_cmds_.end())
 				sub = it->second;
@@ -374,41 +371,48 @@ namespace easycmd {
 				sub = __get_comm_sub_commands(name);
 				if (!sub)
 				{
-					err.append("no found command: ").append(name);
+					printf("no found command: %s\n", name.c_str());
 					return -1;
 				}
 
 				sub->parent_cmd_ = this;
 			}
 
-			return sub->__run_command(argv, argc, idx + 1, err);
+			return sub->__run_command(argv, argc, next_arg + 1);
 		}
-		else
-		{
+		else // left args are options
+		{ 
+			// first, load options from env
 			__load_options_from_env();
 
-			if (!__load_options_from_args(argv + idx, argc - idx, err))
+			// second, load options from args
+			if (!__load_options_from_args(argv + next_arg, argc - next_arg))
 				return -1;
 
-			option_map::iterator opt_beg = options_.begin();
-			while (opt_beg != options_.end())
-			{
-				if (!opt_beg->second->found_value_)
-				{
-					err.append("required option: --").append(opt_beg->second->name_);
-					return false;
-				}
-
-				opt_beg++;
-			}
-
-			if (action_cb_ != NULL)
-				return action_cb_(this);
-
-			return 0;
+			// handle command
+			return __handle_command();
 		}
 
 		return -1;
+	}
+
+	int command::__handle_command()
+	{
+		for (option_map::iterator beg = options_.begin(); beg != options_.end(); beg++)
+		{
+			if (!beg->second->found_value_)
+			{
+				print_help();
+				return 0;
+			}
+		}
+
+		if (action_cb_ != NULL)
+			return action_cb_(this);
+
+		print_help();
+
+		return 0;
 	}
 
 	void command::__load_options_from_env()
@@ -450,21 +454,21 @@ namespace easycmd {
 		}
 	}
 
-	bool command::__load_options_from_args(const char **argv, int argc, std::string &err)
+	bool command::__load_options_from_args(const char **argv, int argc)
 	{
 		for (int i = 0; i < argc; i++)
 		{
 			std::string name, value;
 			if (!internal::__parse_option_name(argv[i], name))
 			{
-				err.append("invalid option: ").append(argv[i]);
+				printf("invalid option: %s\n", argv[i]);
 				return false;
 			}
 
 			option_map::iterator it = options_.find(name);
 			if (it == options_.end())
 			{
-				err.append("no found option: ").append(argv[i]);
+				printf("no found option: %s\n", argv[i]);
 				return false;
 			}
 
@@ -488,7 +492,7 @@ namespace easycmd {
 
 				if (!internal::__is_int_value(value))
 				{
-					err.append("invalid option: ").append(argv[i]);
+					printf("invalid option: %s\n", argv[i]);
 					return false;
 				}
 
@@ -506,7 +510,7 @@ namespace easycmd {
 
 				if (!internal::__is_float_value(value))
 				{
-					err.append("invalid option: ").append(argv[i]);
+					printf("invalid option: %s\n", argv[i]);
 					return false;
 				}
 
@@ -528,7 +532,7 @@ namespace easycmd {
 			}
 			else
 			{
-				err.append("invalid option type at: ").append(argv[i]);
+				printf("invalid option: %s\n", argv[i]);
 				return false;
 			}
 		}
@@ -573,14 +577,6 @@ namespace easycmd {
 		if (pos == std::string::npos)
 			return name_;
 		return name_.substr(pos+1);
-	}
-
-	void command::__occur_fault(const std::string &msg)
-	{
-		if (fault_cb_)
-			fault_cb_(msg);
-		else if (parent_cmd_)
-			parent_cmd_->__occur_fault(msg);
 	}
 
 }
