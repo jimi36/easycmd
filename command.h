@@ -88,12 +88,12 @@ namespace easycmd {
 		void add_sub_cmd(command *sub);
 
 		/*********************************************************************************
-		 * Add common sub command
-		 * All sub commands of the current command will append the common sub command.
-		 * If there is already a common sub command with the same name,  the new common  
-		 * sub command will be replace the old one.
+		 * Add global sub command
+		 * All sub commands of the current command will append the global sub command.
+		 * If there is already a global sub command with the same name, the new global  
+		 * sub command will replace the old one.
 		 ********************************************************************************/
-		void add_comm_sub_cmd(command *sub);
+		void add_global_sub_cmd(command *gsub);
 
 		/*********************************************************************************
 		 * Create option
@@ -117,7 +117,7 @@ namespace easycmd {
 		/*********************************************************************************
 		 * Get parent command
 		 ********************************************************************************/
-		const command* get_parent_command() const { return parent_cmd_; }
+		const command* get_parent_cmd() const { return parent_cmd_; }
 
 		/*********************************************************************************
 		 * Get command help
@@ -138,12 +138,12 @@ namespace easycmd {
 		/*********************************************************************************
 		 * Run command will parse args and call sub command or call action
 		 ********************************************************************************/
-		int __run_command(const char **argv, int argc, int next_arg);
+		int __run_cmd(const char **argv, int argc, int next_arg);
 
 		/*********************************************************************************
 		 * Handle command
 		 ********************************************************************************/
-		int __handle_command();
+		int __handle_cmd();
 
 		/*********************************************************************************
 		 * Load options from environment
@@ -158,17 +158,17 @@ namespace easycmd {
 		/*********************************************************************************
 		 * Get common sub command
 		 ********************************************************************************/
-		command* __get_comm_sub_commands(const std::string &name);
+		command* __get_global_sub_cmd(const std::string &name);
 
 		/*********************************************************************************
-		 * Load all common sub command
+		 * Load all global sub commands
 		 ********************************************************************************/
-		void __load_all_comm_sub_commands(command_map &cmds) const;
+		void __load_all_global_sub_cmds(command_map &cmds) const;
 
 		/*********************************************************************************
 		 * Get command path
 		 ********************************************************************************/
-		std::string __get_command_path() const;
+		std::string __get_cmd_path() const;
 
 	private:
 		// Command name
@@ -185,8 +185,8 @@ namespace easycmd {
 
 		// Sub commands
 		command_map sub_cmds_;
-		// Common sub commands
-		command_map comm_sub_cmds_;
+		// Global sub commands
+		command_map global_sub_cmds_;
 
 		// Command options
 		option_map options_;

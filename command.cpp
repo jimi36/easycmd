@@ -1,7 +1,7 @@
 /*
  * MIT License
  * 
- * Copyright (c) 2020 jimi36
+ * opyright (c) 2020 jimi36
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -139,7 +139,7 @@ namespace easycmd {
 		}
 
 
-		int __getenv(const char *name, char *value, int maxlen)
+		int __getenv(const char *name, std::string &value)
 		{
 #ifdef WIN32
 			size_t len = 0;
@@ -152,11 +152,8 @@ namespace easycmd {
 			char *tmp = getenv(name);
 			if (tmp == NULL)
 				return -1;
-			int len = strlen(tmp);
-			if (len >= maxlen)
-				return -1;
-			memcpy(value, tmp, len);
-			return len;
+			value.assign(tmp);
+			return value.size();
 #endif
 		}
 	}
@@ -172,7 +169,7 @@ namespace easycmd {
 		{
 			// Free all sub commands
 			command_map::iterator beg;
-			for (beg = comm_sub_cmds_.begin(); beg != comm_sub_cmds_.end(); beg++)
+			for (beg = global_sub_cmds_.begin(); beg != global_sub_cmds_.end(); beg++)
 			{
 				delete beg->second;
 			}
@@ -210,17 +207,15 @@ namespace easycmd {
 		sub->parent_cmd_ = this;
 	}
 
-	void command::add_comm_sub_cmd(command *sub)
+	void command::add_global_sub_cmd(command *gsub)
 	{
-		command_map::iterator it = comm_sub_cmds_.find(sub->name_);
-		if (it != comm_sub_cmds_.end())
+		command_map::iterator it = global_sub_cmds_.find(gsub->name_);
+		if (it != global_sub_cmds_.end())
 		{
 			delete it->second;
-			comm_sub_cmds_.erase(it);
+			global_sub_cmds_.erase(it);
 		}
-		comm_sub_cmds_[sub->name_] = sub;
-
-		sub->parent_cmd_ = this;
+		global_sub_cmds_[gsub->name_] = gsub;
 	}
 
 	option* command::create_option_bool(const std::string &name)
@@ -265,7 +260,7 @@ namespace easycmd {
 			des.append("\n").append(desc_).append("\n");
 
 		command_map sub_cmds = sub_cmds_;
-		__load_all_comm_sub_commands(sub_cmds);
+		__load_all_global_sub_cmds(sub_cmds);
 		for (command_map::const_iterator beg = sub_cmds.begin(); beg != sub_cmds.end(); beg++)
 		{
 			if (beg->second == this)
@@ -275,7 +270,7 @@ namespace easycmd {
 			}
 		}
 
-		std::string path = __get_command_path();
+		std::string path = __get_cmd_path();
 		des.append("\nUsage:\n  ").append(path);
 		if (!sub_cmds.empty())
 			des.append(" [COMMAND]");
@@ -296,7 +291,7 @@ namespace easycmd {
 					.append(space_len, ' ').append(beg->second->desc_)
 					.append("\n");
 			}
-			des.append("\n").append(sub_cmds_desc).append("\n");
+			des.append("\n").append(sub_cmds_desc);
 		}
 
 		if (!options_.empty())
@@ -337,7 +332,7 @@ namespace easycmd {
 		if (argc < 0)
 			return -1;
 
-		return __run_command(argv, argc, 1);
+		return __run_cmd(argv, argc, 1);
 	}
 
 	void command::__append_option(option *opt)
@@ -352,11 +347,11 @@ namespace easycmd {
 		options_[opt->name_] = opt;
 	}
 
-	int command::__run_command(const char **argv, int argc, int next_arg)
+	int command::__run_cmd(const char **argv, int argc, int next_arg)
 	{
 		// if there is no more commands or options, the command should be handled
 		if (next_arg >= argc)
-			return __handle_command();
+			return __handle_cmd();
 
 		if (internal::__is_arg_command(argv[next_arg])) // the next arg is command
 		{
@@ -368,7 +363,7 @@ namespace easycmd {
 
 			if (sub == NULL)
 			{
-				sub = __get_comm_sub_commands(name);
+				sub = __get_global_sub_cmd(name);
 				if (!sub)
 				{
 					printf("no found command: %s\n", name.c_str());
@@ -378,7 +373,7 @@ namespace easycmd {
 				sub->parent_cmd_ = this;
 			}
 
-			return sub->__run_command(argv, argc, next_arg + 1);
+			return sub->__run_cmd(argv, argc, next_arg + 1);
 		}
 		else // left args are options
 		{ 
@@ -390,13 +385,13 @@ namespace easycmd {
 				return -1;
 
 			// handle command
-			return __handle_command();
+			return __handle_cmd();
 		}
 
 		return -1;
 	}
 
-	int command::__handle_command()
+	int command::__handle_cmd()
 	{
 		for (option_map::iterator beg = options_.begin(); beg != options_.end(); beg++)
 		{
@@ -417,20 +412,19 @@ namespace easycmd {
 
 	void command::__load_options_from_env()
 	{
-		char value[1024];
 		option_map::iterator beg = options_.begin();
 		while (beg != options_.end())
 		{
 			option *opt = (beg++)->second;
 			if (!opt->env_.empty())
 			{
-				int len = internal::__getenv(opt->env_.c_str(), value, sizeof(value));
+				std::string value;
+				int len = internal::__getenv(opt->env_.c_str(), value);
 				if (len > 0)
 				{
 					if (opt->type_ == internal::OP_TYPE_BOOL)
 					{
-						if (strncmp(value, "true", 4) == 0 ||
-							strncmp(value, "TRUE", 4) == 0)
+						if (value == "true" || value == "TRUE")
 							opt->__set(true);
 						else
 							opt->__set(false);
@@ -438,12 +432,12 @@ namespace easycmd {
 					else if (opt->type_ == internal::OP_TYPE_INT)
 					{
 						if (internal::__is_int_value(value))
-							opt->__set(atoi(value));
+							opt->__set(atoi(value.c_str()));
 					}
 					else if (opt->type_ == internal::OP_TYPE_FLOAT)
 					{
 						if (internal::__is_float_value(value))
-							opt->__set(atof(value));
+							opt->__set(atof(value.c_str()));
 					}
 					else if (opt->type_ == internal::OP_TYPE_STRING)
 					{
@@ -540,34 +534,34 @@ namespace easycmd {
 		return true;
 	}
 
-	command* command::__get_comm_sub_commands(const std::string &name)
+	command* command::__get_global_sub_cmd(const std::string &name)
 	{
-		command_map::iterator it = comm_sub_cmds_.find(name);
-		if (it != comm_sub_cmds_.end())
+		command_map::iterator it = global_sub_cmds_.find(name);
+		if (it != global_sub_cmds_.end())
 			return it->second;
 
 		if (parent_cmd_)
-			return parent_cmd_->__get_comm_sub_commands(name);
+			return parent_cmd_->__get_global_sub_cmd(name);
 
 		return NULL;
 	}
 
-	void command::__load_all_comm_sub_commands(command_map &cmds) const
+	void command::__load_all_global_sub_cmds(command_map &cmds) const
 	{
-		for (command_map::const_iterator beg = comm_sub_cmds_.begin(); beg != comm_sub_cmds_.end(); beg++)
+		for (command_map::const_iterator beg = global_sub_cmds_.begin(); beg != global_sub_cmds_.end(); beg++)
 		{
 			if (cmds.find(beg->first) == cmds.end())
 				cmds[beg->first] = beg->second;
 		}
 
 		if (parent_cmd_)
-			parent_cmd_->__load_all_comm_sub_commands(cmds);
+			parent_cmd_->__load_all_global_sub_cmds(cmds);
 	}
 
-	std::string command::__get_command_path() const
+	std::string command::__get_cmd_path() const
 	{
 		if (parent_cmd_)
-			return parent_cmd_->__get_command_path() + " " + name_;
+			return parent_cmd_->__get_cmd_path() + " " + name_;
 
 #ifdef WIN32
 		size_t pos = name_.rfind('\\');

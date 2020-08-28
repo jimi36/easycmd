@@ -35,7 +35,7 @@ int main(int argc, const char **argv)
 	cmd.with_name(argv[0])->with_desc("Test easy command");
 
 	cmd.add_sub_cmd(sub);
-	cmd.add_comm_sub_cmd(comm_sub);
+	cmd.add_global_sub_cmd(comm_sub);
 
 	int ret = cmd.run(argc, argv);
 
