@@ -141,20 +141,11 @@ namespace easycmd {
 
 		int __getenv(const char *name, std::string &value)
 		{
-#ifdef WIN32
-			size_t len = 0;
-			memset(value, 0, maxlen);
-			getenv_s(&len, value, sizeof(value), name);
-			if (len == 0)
-				return -1;
-			return len;
-#else
 			char *tmp = getenv(name);
 			if (tmp == NULL)
 				return -1;
 			value.assign(tmp);
 			return value.size();
-#endif
 		}
 	}
 
