@@ -201,6 +201,7 @@ namespace easycmd {
          * Setup option
          ********************************************************************************/
         bool __setup_option(const std::string &name, const std::string &value);
+        bool __setup_option(option *opt, const std::string &value);
 
         /*********************************************************************************
          * Get public sub command

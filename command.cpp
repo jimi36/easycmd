@@ -379,25 +379,8 @@ namespace easycmd {
             option *opt = options_[i];
             if (!opt->env_.empty()) {
                 std::string value;
-                int len = internal::get_system_env(opt->env_.c_str(), value);
-                if (len > 0) {
-                    if (opt->type_ == internal::OP_TYPE_BOOL) {
-                        if (value.empty() ||value == "true" || value == "TRUE") {
-                            opt->__set(true);
-                        } else {
-                            opt->__set(false);
-                        }
-                    } else if (opt->type_ == internal::OP_TYPE_INT) {
-                        if (internal::is_int_value(value)) {
-                            opt->__set(atoi(value.c_str()));
-                        }
-                    } else if (opt->type_ == internal::OP_TYPE_FLOAT) {
-                        if (internal::is_float_value(value)) {
-                            opt->__set(atof(value.c_str()));
-                        }
-                    } else if (opt->type_ == internal::OP_TYPE_STRING) {
-                        opt->__set(value);
-                    }
+                if (internal::get_system_env(opt->env_.c_str(), value) > 0) {
+                    __setup_option(opt, value);
                 }
             }
         }
@@ -455,7 +438,10 @@ namespace easycmd {
         if (!opt) {
             return true;
         }
-
+        return __setup_option(opt, value);
+    }
+    
+    bool command::__setup_option(option *opt, const std::string &value) {
         if (opt->type_ == internal::OP_TYPE_BOOL) {
             if (value.empty() || value == "true" || value == "TRUE") {
                 opt->__set(true);                
