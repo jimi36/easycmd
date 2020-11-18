@@ -235,17 +235,17 @@ namespace easycmd {
                 int space_len = 32 - 4;
                 options_desc.append("    ");
 
-                if (!opt->long_name_.empty()) {
-                    options_desc.append("--").append(opt->long_name_);
-                    space_len -= (2 + (int)opt->long_name_.size());
-                }
                 if (!opt->short_name_.empty()) {
-                    if (!opt->long_name_.empty()) {
-                        options_desc.append(",");
-                        space_len -= 1;
-                    }
                     options_desc.append("-").append(opt->short_name_);
                     space_len -= (1 + (int)opt->short_name_.size());
+                }
+                if (!opt->long_name_.empty()) {
+                    if (!opt->short_name_.empty()) {
+                        options_desc.append(", ");
+                        space_len -= 2;
+                    }
+                    options_desc.append("--").append(opt->long_name_);
+                    space_len -= (2 + (int)opt->long_name_.size());
                 }
                 options_desc.append(space_len, ' ');
                 
@@ -436,7 +436,7 @@ namespace easycmd {
     bool command::__setup_option(const std::string &name, const std::string &value) {
         option *opt = __find_option(name, name);
         if (!opt) {
-            return true;
+            return false;
         }
         return __setup_option(opt, value);
     }
